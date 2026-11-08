@@ -250,6 +250,7 @@ def _rule(policy_id: str, policy: Block, position: int, device: str) -> Rule:
         device=device,
         name=name,
         position=position,
+        vendor_id=policy_id,  # traffic logs always carry policyid, not always policyname
         src_zones=_match(policy, "srcintf"),
         dst_zones=_match(policy, "dstintf"),
         src_addrs=_match(policy, "srcaddr"),

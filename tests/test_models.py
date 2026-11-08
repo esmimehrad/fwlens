@@ -1,7 +1,10 @@
+from datetime import UTC, datetime, timedelta, timezone
+from ipaddress import IPv4Address
+
 import pytest
 from pydantic import ValidationError
 
-from fwlens.models import ANY, Action, Rule, Vendor
+from fwlens.models import ANY, Action, LogEvent, Rule, Vendor
 
 
 def make_rule(**overrides) -> Rule:
@@ -69,3 +72,54 @@ def test_unknown_action_is_rejected() -> None:
 def test_unknown_field_is_rejected() -> None:
     with pytest.raises(ValidationError):
         make_rule(comment="typo'd field names should fail loudly")
+
+
+# --- LogEvent ----------------------------------------------------------------
+
+
+def make_event(**overrides) -> LogEvent:
+    fields = {
+        "vendor": "fortigate",
+        "device": "lab-fgt01",
+        "timestamp": datetime(2026, 11, 1, 12, 0, tzinfo=UTC),
+        "src_ip": "10.20.10.5",
+        "dst_ip": "192.0.2.10",
+        "dst_port": 443,
+        "protocol": "tcp",
+        "rule_name": "allow-web-out",
+        "action": "allow",
+        "bytes": 1500,
+    }
+    fields.update(overrides)
+    return LogEvent(**fields)
+
+
+def test_event_parses_ips_and_rule_id() -> None:
+    event = make_event()
+    assert event.src_ip == IPv4Address("10.20.10.5")
+    assert event.rule_id == "fortigate:lab-fgt01:allow-web-out"
+
+
+def test_event_timestamp_is_normalized_to_utc() -> None:
+    plus_one = timezone(timedelta(hours=1))
+    event = make_event(timestamp=datetime(2026, 11, 1, 13, 0, tzinfo=plus_one))
+    assert event.timestamp == datetime(2026, 11, 1, 12, 0, tzinfo=UTC)
+    assert event.timestamp.tzinfo is UTC
+
+
+def test_event_rejects_naive_timestamp() -> None:
+    with pytest.raises(ValidationError):
+        make_event(timestamp=datetime(2026, 11, 1, 12, 0))
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [{"src_ip": "10.20.10.999"}, {"dst_port": 70000}, {"bytes": -1}],
+)
+def test_event_rejects_bad_values(overrides: dict) -> None:
+    with pytest.raises(ValidationError):
+        make_event(**overrides)
+
+
+def test_icmp_event_has_no_port() -> None:
+    assert make_event(protocol="icmp", dst_port=None).dst_port is None

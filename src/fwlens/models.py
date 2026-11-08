@@ -10,10 +10,19 @@ Conventions:
   carry the resolved values that those names expand to.
 """
 
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    IPvAnyAddress,
+    computed_field,
+    field_validator,
+)
 
 ANY = "any"
 
@@ -72,6 +81,7 @@ class Rule(_Frozen):
     device: str
     name: str
     position: int = Field(ge=1)  # 1-based order in the rulebase
+    vendor_id: str | None = None  # FortiGate policy ID / PAN-OS rule uuid, if the config has one
     src_zones: MatchField
     dst_zones: MatchField
     src_addrs: MatchField
@@ -95,6 +105,31 @@ class Rule(_Frozen):
         if ANY in v and len(v) > 1:
             raise ValueError(f"'{ANY}' cannot be combined with other values: {v}")
         return v
+
+
+class LogEvent(_Frozen):
+    """One traffic session from a firewall log."""
+
+    vendor: Vendor
+    device: str
+    timestamp: AwareDatetime  # stored in UTC; naive datetimes are rejected
+    src_ip: IPvAnyAddress
+    dst_ip: IPvAnyAddress
+    dst_port: int | None = Field(default=None, ge=0, le=65535)  # None for ICMP
+    protocol: str  # tcp / udp / icmp, or the IP protocol number if unknown
+    rule_name: str  # same naming as Rule.name, so logs join to rules on (vendor, device, name)
+    action: Action
+    bytes: int = Field(ge=0)  # sent + received
+
+    @computed_field
+    @property
+    def rule_id(self) -> str:
+        return f"{self.vendor}:{self.device}:{self.rule_name}"
+
+    @field_validator("timestamp")
+    @classmethod
+    def _to_utc(cls, v: datetime) -> datetime:
+        return v.astimezone(UTC)
 
 
 class ParsedConfig(_Frozen):

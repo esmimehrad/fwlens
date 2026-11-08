@@ -47,6 +47,7 @@ def test_rules_keep_rulebase_order(config) -> None:
 def test_rule_fields_are_mapped(rules) -> None:
     rule = rules["allow-web-in"]
     assert rule.id == "panos:lab-fw01:allow-web-in"
+    assert rule.vendor_id == "0b6f3c1e-5d2a-4e8f-9a71-3c2d8e4f1a01"
     assert rule.src_zones == ("untrust",)
     assert rule.dst_zones == ("dmz",)
     assert rule.src_addrs == (ANY,)

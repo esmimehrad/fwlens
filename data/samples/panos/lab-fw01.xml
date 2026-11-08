@@ -86,7 +86,7 @@
                   <service><member>application-default</member></service>
                   <action>allow</action>
                 </entry>
-                <entry name="allow-web-in">
+                <entry name="allow-web-in" uuid="0b6f3c1e-5d2a-4e8f-9a71-3c2d8e4f1a01">
                   <from><member>untrust</member></from>
                   <to><member>dmz</member></to>
                   <source><member>any</member></source>

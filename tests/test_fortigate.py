@@ -51,6 +51,7 @@ def test_position_follows_config_order_not_policy_id(config) -> None:
         "11",  # no `set name`: falls back to the policy ID
     ]
     assert [r.position for r in config.rules] == list(range(1, 12))
+    assert config.rules[8].vendor_id == "12"  # temp-vendor-access
 
 
 def test_rule_fields_are_mapped(rules) -> None:

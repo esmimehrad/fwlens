@@ -151,6 +151,7 @@ def _rule(entry: etree._Element, position: int, device: str) -> Rule:
         device=device,
         name=name,
         position=position,
+        vendor_id=entry.get("uuid"),  # PAN-OS 9.0+ gives every rule a uuid attribute
         src_zones=_members(entry, "from"),
         dst_zones=_members(entry, "to"),
         src_addrs=_members(entry, "source"),
