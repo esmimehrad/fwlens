@@ -51,6 +51,20 @@ def test_panos_non_traffic_log_is_skipped() -> None:
     assert parse_line(PANOS_END.replace(",TRAFFIC,", ",SYSTEM,")) is None
 
 
+def test_panos_short_system_log_is_skipped_not_rejected() -> None:
+    # Real SYSTEM logs have far fewer fields than TRAFFIC logs.
+    line = (
+        "<14>Nov  1 12:00:00 lab-fw01 1,2026/11/01 12:00:00,012801000001,SYSTEM,general,0,"
+        "2026/11/01 12:00:00,,general,,0,0,general,informational,User admin logged in"
+    )
+    assert parse_line(line) is None
+
+
+def test_panos_truncated_traffic_log_raises() -> None:
+    with pytest.raises(ValueError, match="fields"):
+        parse_line(PANOS_END[:200])
+
+
 @pytest.mark.parametrize(
     ("raw", "expected"),
     [("deny", Action.DENY), ("drop", Action.DROP), ("reset-both", Action.DENY)],
@@ -72,11 +86,6 @@ def test_panos_icmp_has_no_port() -> None:
 def test_panos_without_header_raises() -> None:
     with pytest.raises(ValueError, match="no syslog header"):
         parse_line(PANOS_END.split("lab-fw01 ", 1)[1])
-
-
-def test_panos_truncated_line_raises() -> None:
-    with pytest.raises(ValueError, match="fields"):
-        parse_line(PANOS_END[:200])
 
 
 # --- FortiGate ----------------------------------------------------------------

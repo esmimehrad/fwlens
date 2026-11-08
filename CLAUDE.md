@@ -74,7 +74,7 @@ and ground truth.
 ## Steps (Phase 2)
 - [x] 5. Repo, tooling, CI skeleton, architecture diagram in `docs/`
 - [x] 6. `models.py` + PAN-OS and FortiGate parsers + tests
-- [ ] 7. Syslog parser + sample log generator + tests
+- [x] 7. Syslog parser + sample log generator + tests
 - [ ] 8. Postgres schema (Alembic) + loader; `docker compose up` works   <- milestone, week 2
 - [ ] 9. SQL rule checks: any-any, shadowed, duplicate, zero-hit, logging-off (Mehrad writes)
 - [ ] 10. RAG: chunk + embed vendor best-practice docs into pgvector; retrieval with citations
@@ -112,3 +112,11 @@ findings plus agent answers. The README shows measured results, not claims.
   FortiGate multi-VDOM / negate / internet-service / geography+wildcard addresses.
   FortiGate logtraffic "utm" counts as logging on (only "disable" is off) - revisit at Step 9.
   Next: Step 7 (syslog parser + sample log generator + tests; adds LogEvent).
+- 2026-11-08: Step 7 done (7a LogEvent + Rule.vendor_id, 7b syslog parser, 7c generator).
+  Sample logs: `data/samples/logs/{lab-fw01,lab-fgt01}.log`, 1000 sessions each, regenerate
+  with `uv run python -m fwlens.samplegen` (a test fails if they drift).
+  Zero-hit ground truth: `NO_TRAFFIC` in `samplegen.py` + disabled rules + logging-off rules
+  (allow-ntp has traffic but no logs: Step 9 must not call it "unused" without caveat).
+  Open: PAN-OS CSV field positions come from docs, not a real device; verify against one
+  real lab log line if possible.
+  Next: Step 8 (Postgres schema via Alembic + loader; `docker compose up` works).

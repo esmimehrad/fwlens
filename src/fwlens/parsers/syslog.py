@@ -59,14 +59,18 @@ def _panos_action(value: str) -> Action:
 
 def _parse_panos(payload: str, host: str, tz: tzinfo) -> LogEvent | None:
     fields = next(csv.reader([payload]))  # csv handles quoted rule names with commas
+    # Check the type first: other log types (SYSTEM, CONFIG...) have fewer fields.
+    log_type = fields[PANOS_FIELDS["type"]] if len(fields) > PANOS_FIELDS["type"] else None
+    if log_type != "TRAFFIC":
+        if log_type is None or not log_type.isupper():
+            raise ValueError(f"not a PAN-OS log: {payload[:40]!r}")
+        return None
     if len(fields) < PANOS_MIN_FIELDS:
         raise ValueError(f"PAN-OS log has {len(fields)} fields, need {PANOS_MIN_FIELDS}")
 
     def get(name: str) -> str:
         return fields[PANOS_FIELDS[name]]
 
-    if get("type") != "TRAFFIC":
-        return None
     if get("subtype") == "start":
         return None  # the same session logs again at "end"; count it once
 
