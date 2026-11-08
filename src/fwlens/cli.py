@@ -5,6 +5,8 @@ fwlens load-config FILE [--vendor panos|fortigate]
 fwlens load-logs FILE
 fwlens load-samples               load every sample config and log in data/samples
 fwlens run-checks [CHECK ...]     run the rule checks in analysis/checks.sql
+fwlens docs ingest [--fake]       embed data/docs into pgvector (Bedrock unless --fake)
+fwlens docs search QUERY [--vendor V] [-k N] [--fake]
 """
 
 import argparse
@@ -17,6 +19,9 @@ from fwlens.db.migrate import upgrade_schema
 from fwlens.db.session import get_engine
 from fwlens.models import Vendor
 from fwlens.parsers import parse_config_file
+from fwlens.rag.embed import get_embedder
+from fwlens.rag.ingest import ingest_docs
+from fwlens.rag.retrieve import search
 from fwlens.samplegen import SAMPLES
 
 
@@ -39,6 +44,16 @@ def main(argv: list[str] | None = None) -> None:
     checks = commands.add_parser("run-checks", help="run the rule checks")
     checks.add_argument("checks", nargs="*", metavar="CHECK", help=f"default: all of {CHECK_NAMES}")
 
+    docs = commands.add_parser("docs", help="best-practice docs (RAG)")
+    docs_commands = docs.add_subparsers(dest="docs_command", required=True)
+    ingest = docs_commands.add_parser("ingest", help="chunk and embed data/docs")
+    query = docs_commands.add_parser("search", help="semantic search over the docs")
+    query.add_argument("query")
+    query.add_argument("--vendor", choices=[v.value for v in Vendor])
+    query.add_argument("-k", type=int, default=5)
+    for sub in (ingest, query):
+        sub.add_argument("--fake", action="store_true", help="offline hashing embedder, no AWS")
+
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
 
@@ -58,6 +73,22 @@ def main(argv: list[str] | None = None) -> None:
             if unknown:
                 parser.error(f"unknown check(s) {sorted(unknown)}; choose from {CHECK_NAMES}")
             _run_checks(args.checks or list(CHECK_NAMES))
+        case "docs":
+            embedder = get_embedder(fake=args.fake)
+            if args.docs_command == "ingest":
+                with get_engine().begin() as conn:
+                    stats = ingest_docs(conn, embedder)
+                print(
+                    f"{embedder.model_id}: {stats.embedded} embedded, "
+                    f"{stats.unchanged} unchanged, {stats.removed} removed"
+                )
+            else:
+                with get_engine().connect() as conn:
+                    hits = search(conn, embedder, args.query, k=args.k, vendor=args.vendor)
+                if not hits:
+                    print(f"no chunks embedded with {embedder.model_id}; run `fwlens docs ingest`")
+                for n, hit in enumerate(hits, 1):
+                    print(f"[{n}] {hit.score:.3f}  {hit.citation}")
 
 
 def _load_configs(files: list[tuple[Path, str | None]]) -> None:

@@ -144,3 +144,13 @@ findings plus agent answers. The README shows measured results, not claims.
   interviews.
   Next: Step 10 (RAG over vendor docs; needs Bedrock Titan embeddings - ask before any
   AWS cost; confirm AWS profile/region and model access first).
+- 2026-11-08: Step 10 code done, tested offline. 5 original docs in `data/docs/` (our own
+  words + further-reading links; no copied vendor text), 29 chunks by "## " section.
+  Migration 0002: pgvector + doc_chunks (vector(1024), HNSW cosine index).
+  rag/embed.py (Titan V2 via boto3 + FakeEmbedder), rag/ingest.py (re-embeds only changed
+  chunks, removes stale ones), rag/retrieve.py (cosine search, same-model only, citations).
+  CLI: `fwlens docs ingest|search [--fake]`.
+  BLOCKED on AWS: `default` profile key is invalid (InvalidClientTokenId); region us-east-2.
+  Another profile `microseg-v2` exists - not used without Mehrad's OK.
+  Next: fix AWS creds, enable Titan Text Embeddings V2 model access, then run
+  `fwlens docs ingest` for real (~29 calls, well under $0.01) after Mehrad approves.

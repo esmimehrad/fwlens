@@ -17,6 +17,16 @@ uv run fwlens db upgrade        # create the schema
 uv run fwlens load-samples      # synthetic PAN-OS + FortiGate configs and 7 days of logs
 ```
 
+Rule checks and best-practice search:
+
+```bash
+uv run fwlens run-checks                       # any-any, shadowed, duplicate, zero-hit, logging-off
+uv run fwlens docs ingest                      # embed data/docs with Amazon Titan (Bedrock)
+uv run fwlens docs search "is utm logging enough?" --vendor fortigate
+```
+
+Add `--fake` to the `docs` commands to run offline without AWS (word-overlap only).
+
 Load your own (lab/synthetic) files with `uv run fwlens load-config <file>` and
 `uv run fwlens load-logs <file>`. Reloading a config replaces that device; reloading
 the same log file is skipped.

@@ -11,6 +11,7 @@ Design notes:
   the loaded config (implicit-deny, interzone-default, logs loaded before the config).
 """
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -151,4 +152,35 @@ log_events = Table(
     CheckConstraint("bytes >= 0", name="bytes"),
     Index(None, "vendor", "device", "rule_name"),  # hit counts per rule
     Index(None, "ts"),  # time-window queries
+)
+
+# --- RAG (Step 10) ---------------------------------------------------------------
+
+EMBEDDING_DIMENSIONS = 1024  # Titan Text Embeddings V2 default; the fake embedder matches
+
+# One row per chunk of a best-practice document in data/docs, with its embedding.
+doc_chunks = Table(
+    "doc_chunks",
+    metadata,
+    Column("id", Text, primary_key=True),  # "<doc_id>#<chunk_index>"
+    Column("doc_id", Text, nullable=False),  # path under data/docs without .md
+    Column("chunk_index", Integer, nullable=False),
+    Column("title", Text, nullable=False),
+    Column("heading", Text, nullable=False),
+    Column("vendor", Text, nullable=False),
+    Column("text", Text, nullable=False),
+    # Re-embed only when the text or the model changes (embedding calls cost money).
+    Column("content_sha256", Text, nullable=False),
+    Column("embed_model", Text, nullable=False),
+    Column("embedding", Vector(EMBEDDING_DIMENSIONS), nullable=False),
+    UniqueConstraint("doc_id", "chunk_index"),
+    CheckConstraint("vendor IN ('panos', 'fortigate', 'general')", name="vendor"),
+    # Approximate nearest-neighbour index for cosine distance. Overkill at a few dozen
+    # chunks, but it's what keeps search fast at thousands.
+    Index(
+        "ix_doc_chunks_embedding",
+        "embedding",
+        postgresql_using="hnsw",
+        postgresql_ops={"embedding": "vector_cosine_ops"},
+    ),
 )
