@@ -99,7 +99,8 @@ findings plus agent answers. The README shows measured results, not claims.
 - 2026-11-07: Installed uv 0.13.7, Python 3.12.16 (uv-managed), Docker Desktop (WSL2).
   Step 5 done: uv project (src layout, py3.12 pin), ruff + pytest config, package skeleton,
   smoke tests, CI (ruff + pytest), Mermaid diagram in `docs/architecture.md`.
-  Open: no GitHub remote yet, so CI hasn't run; `docs/architecture.png` export still to do.
-  Note: run `uv python install` from a normal terminal, not inside the Claude desktop app
-  (its AppData writes are redirected).
+  Repo: https://github.com/esmimehrad/fwlens (public); first CI run green.
+  Open: `docs/architecture.png` export still to do.
+  Note: run `uv python install` and `gh` commands from a normal terminal, not inside the
+  Claude desktop app (its AppData writes are redirected and it can't see the gh login).
   Next: Step 6 (`models.py` + PAN-OS / FortiGate parsers + tests).
