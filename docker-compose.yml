@@ -1,0 +1,24 @@
+# Local stack. Step 8: database only; the app container is added in Step 14.
+#   docker compose up -d        start Postgres 16 + pgvector
+#   docker compose down         stop (data kept in the pgdata volume)
+#   docker compose down -v      stop and delete the data
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: fwlens
+      # Local dev only; override via .env for anything shared.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fwlens}
+      POSTGRES_DB: fwlens
+    ports:
+      - "127.0.0.1:5432:5432" # reachable from this machine only
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fwlens -d fwlens"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
