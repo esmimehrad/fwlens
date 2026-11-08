@@ -40,8 +40,8 @@ _LEAF_ADDRESS_KINDS = (AddressKind.NETMASK, AddressKind.RANGE, AddressKind.FQDN)
 
 # Predefined on every PAN-OS device, so they never appear in the config itself.
 _PREDEFINED_SERVICES = {
-    "service-http": ("tcp", ("80", "8080")),
-    "service-https": ("tcp", ("443",)),
+    "service-http": ("tcp/80", "tcp/8080"),
+    "service-https": ("tcp/443",),
 }
 
 
@@ -68,10 +68,8 @@ def parse_panos_xml(xml: str | bytes, device: str | None = None) -> ParsedConfig
     scopes = [scope for scope in (root.find("shared"), vsys) if scope is not None]
     addresses = {a.name: a for scope in scopes for a in _addresses(scope, device)}
     services = {
-        name: ServiceObject(
-            vendor=Vendor.PANOS, device=device, name=name, protocol=proto, ports=ports
-        )
-        for name, (proto, ports) in _PREDEFINED_SERVICES.items()
+        name: ServiceObject(vendor=Vendor.PANOS, device=device, name=name, entries=entries)
+        for name, entries in _PREDEFINED_SERVICES.items()
     }
     services.update({s.name: s for scope in scopes for s in _services(scope, device)})
 
@@ -122,10 +120,8 @@ def _services(scope: etree._Element, device: str) -> Iterator[ServiceObject]:
             port = _text(entry.find(f"protocol/{proto}/port"))
             if port:
                 # PAN-OS allows "80,8080" and "8000-8080" in one <port> element.
-                ports = tuple(p.strip() for p in port.split(","))
-                yield ServiceObject(
-                    vendor=Vendor.PANOS, device=device, name=name, protocol=proto, ports=ports
-                )
+                entries = tuple(f"{proto}/{p.strip()}" for p in port.split(","))
+                yield ServiceObject(vendor=Vendor.PANOS, device=device, name=name, entries=entries)
                 break
         else:
             raise ValueError(f"service {name!r}: no tcp/udp/sctp port found")
@@ -135,6 +131,7 @@ def _services(scope: etree._Element, device: str) -> Iterator[ServiceObject]:
             vendor=Vendor.PANOS,
             device=device,
             name=entry.get("name"),
+            is_group=True,
             members=_members(entry, "members"),
         )
 

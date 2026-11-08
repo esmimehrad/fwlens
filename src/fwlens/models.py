@@ -58,10 +58,12 @@ class ServiceObject(_Frozen):
     vendor: Vendor
     device: str
     name: str
-    protocol: str | None = None  # tcp / udp / sctp; None for groups
-    ports: tuple[str, ...] = ()  # "443", "8000-8080"
+    is_group: bool = False
+    # Leaf services: "tcp/443", "udp/53", "tcp/8000-8080", or a bare protocol like "icmp".
+    # One object can mix protocols (a FortiGate DNS service is both tcp/53 and udp/53).
+    entries: tuple[str, ...] = ()
     members: tuple[str, ...] = ()  # direct member names, groups only
-    resolved: tuple[str, ...] = ()  # flattened "tcp/443", "udp/53", "tcp/8000-8080"
+    resolved: tuple[str, ...] = ()  # flattened entries after group resolution
     unresolved: tuple[str, ...] = ()
 
 

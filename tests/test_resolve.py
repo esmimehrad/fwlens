@@ -48,11 +48,13 @@ def test_group_cycle_raises() -> None:
         resolve_addresses([group("a", "b"), group("b", "a")])
 
 
-def test_services_resolve_to_protocol_slash_port() -> None:
+def test_service_groups_flatten_entries() -> None:
     objects = [
-        ServiceObject(vendor="panos", device="t", name="web", protocol="tcp", ports=("80", "443")),
-        ServiceObject(vendor="panos", device="t", name="dns", protocol="udp", ports=("53",)),
-        ServiceObject(vendor="panos", device="t", name="grp", members=("web", "dns")),
+        ServiceObject(vendor="panos", device="t", name="web", entries=("tcp/80", "tcp/443")),
+        ServiceObject(vendor="panos", device="t", name="dns", entries=("tcp/53", "udp/53")),
+        ServiceObject(
+            vendor="panos", device="t", name="grp", is_group=True, members=("web", "dns")
+        ),
     ]
     result = by_name(resolve_services(objects))
-    assert result["grp"].resolved == ("tcp/80", "tcp/443", "udp/53")
+    assert result["grp"].resolved == ("tcp/80", "tcp/443", "tcp/53", "udp/53")

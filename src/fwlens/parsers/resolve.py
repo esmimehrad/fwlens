@@ -23,8 +23,8 @@ def resolve_addresses(objects: Iterable[AddressObject]) -> tuple[AddressObject, 
 def resolve_services(objects: Iterable[ServiceObject]) -> tuple[ServiceObject, ...]:
     return _resolve(
         objects,
-        is_group=lambda o: o.protocol is None,
-        leaf=lambda o: tuple(f"{o.protocol}/{port}" for port in o.ports),
+        is_group=lambda o: o.is_group,
+        leaf=lambda o: o.entries,
     )
 
 

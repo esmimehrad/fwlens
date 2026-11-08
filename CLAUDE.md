@@ -73,7 +73,7 @@ and ground truth.
 
 ## Steps (Phase 2)
 - [x] 5. Repo, tooling, CI skeleton, architecture diagram in `docs/`
-- [ ] 6. `models.py` + PAN-OS and FortiGate parsers + tests
+- [x] 6. `models.py` + PAN-OS and FortiGate parsers + tests
 - [ ] 7. Syslog parser + sample log generator + tests
 - [ ] 8. Postgres schema (Alembic) + loader; `docker compose up` works   <- milestone, week 2
 - [ ] 9. SQL rule checks: any-any, shadowed, duplicate, zero-hit, logging-off (Mehrad writes)
@@ -104,3 +104,11 @@ findings plus agent answers. The README shows measured results, not claims.
   Note: run `uv python install` and `gh` commands from a normal terminal, not inside the
   Claude desktop app (its AppData writes are redirected and it can't see the gh login).
   Next: Step 6 (`models.py` + PAN-OS / FortiGate parsers + tests).
+- 2026-11-08: Step 6 done in three commits (6a models, 6b PAN-OS + group resolver,
+  6c FortiGate). Synthetic samples with seeded flaws in `data/samples/{panos,fortigate}/`.
+  ServiceObject changed from protocol+ports to `entries` ("tcp/53", "udp/53", "icmp")
+  because FortiGate services mix protocols.
+  Known limits (raise ValueError): PAN-OS multi-vsys / negate / dynamic groups / Panorama;
+  FortiGate multi-VDOM / negate / internet-service / geography+wildcard addresses.
+  FortiGate logtraffic "utm" counts as logging on (only "disable" is off) - revisit at Step 9.
+  Next: Step 7 (syslog parser + sample log generator + tests; adds LogEvent).
