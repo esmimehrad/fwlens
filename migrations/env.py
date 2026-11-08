@@ -10,7 +10,9 @@ from fwlens.db.session import database_url, get_engine
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # Without disable_existing_loggers=False, running a migration in-process (CLI,
+    # tests, app startup) silently switches off every logger created before it.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # The current schema, used by `alembic check` / autogenerate to detect drift.
 target_metadata = metadata

@@ -75,7 +75,7 @@ and ground truth.
 - [x] 5. Repo, tooling, CI skeleton, architecture diagram in `docs/`
 - [x] 6. `models.py` + PAN-OS and FortiGate parsers + tests
 - [x] 7. Syslog parser + sample log generator + tests
-- [ ] 8. Postgres schema (Alembic) + loader; `docker compose up` works   <- milestone, week 2
+- [x] 8. Postgres schema (Alembic) + loader; `docker compose up` works   <- milestone, week 2
 - [ ] 9. SQL rule checks: any-any, shadowed, duplicate, zero-hit, logging-off (Mehrad writes)
 - [ ] 10. RAG: chunk + embed vendor best-practice docs into pgvector; retrieval with citations
 - [ ] 11. Agent with tools: run_checks, query_rules, query_logs, search_docs,
@@ -120,3 +120,10 @@ findings plus agent answers. The README shows measured results, not claims.
   Open: PAN-OS CSV field positions come from docs, not a real device; verify against one
   real lab log line if possible.
   Next: Step 8 (Postgres schema via Alembic + loader; `docker compose up` works).
+- 2026-11-08: Step 8 done (8a compose + session, 8b schema + migration 0001, 8c loader,
+  CLI, db tests, Postgres service in CI). `uv run fwlens load-samples` loads everything;
+  config reload replaces the device, log reload is skipped by sha256.
+  Gotchas: use 127.0.0.1 not localhost on Windows (IPv6 hang); env.py must pass
+  disable_existing_loggers=False or in-process migrations mute app loggers.
+  Compose is db-only for now; app container comes in Step 14.
+  Next: Step 9 (SQL rule checks in `analysis/checks.sql` - Mehrad writes, I review).

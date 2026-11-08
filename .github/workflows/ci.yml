@@ -8,6 +8,27 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+
+    # Same image as docker-compose.yml, for the db-marked integration tests.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: fwlens
+          POSTGRES_PASSWORD: fwlens
+          POSTGRES_DB: fwlens
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fwlens -d fwlens"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      # In CI, an unreachable database fails the db tests instead of skipping them.
+      FWLENS_REQUIRE_DB: "1"
+
     steps:
       - uses: actions/checkout@v5
 

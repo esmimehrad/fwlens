@@ -15,6 +15,9 @@ dependencies = [
     "sqlalchemy>=2.1.8",
 ]
 
+[project.scripts]
+fwlens = "fwlens.cli:main"
+
 [build-system]
 requires = ["uv_build>=0.13.7,<0.14.0"]
 build-backend = "uv_build"
@@ -36,3 +39,4 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = ["db: needs Postgres (skipped if unreachable, unless FWLENS_REQUIRE_DB=1)"]
