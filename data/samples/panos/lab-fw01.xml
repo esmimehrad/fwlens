@@ -1,0 +1,179 @@
+<?xml version="1.0"?>
+<!--
+  SYNTHETIC lab config for fwlens. Not from any real network.
+  Addresses: RFC1918 (10.0.0.0/8) and documentation ranges (203.0.113.0/24, example.net).
+
+  Seeded flaws (ground truth for later evals):
+    allow-ssh-jump      SHADOWED by allow-ssh-admins (h-web01 is a member of grp-web)
+    allow-ntp           LOGGING OFF on an allow rule
+    allow-web-out-copy  DUPLICATE of allow-web-out
+    old-ftp-access      DISABLED rule; h-ftp01 is referenced only here
+    temp-vendor-access  ANY-ANY allow (any source, destination, application, service)
+    grp-blocklist       contains h-decom, which no longer exists (unresolved member)
+-->
+<config version="11.1.0">
+  <shared>
+    <address>
+      <entry name="f-bad-domain">
+        <fqdn>bad.example.net</fqdn>
+      </entry>
+    </address>
+  </shared>
+  <devices>
+    <entry name="localhost.localdomain">
+      <deviceconfig>
+        <system>
+          <hostname>lab-fw01</hostname>
+        </system>
+      </deviceconfig>
+      <vsys>
+        <entry name="vsys1">
+          <address>
+            <entry name="net-users"><ip-netmask>10.10.10.0/24</ip-netmask></entry>
+            <entry name="net-servers"><ip-netmask>10.10.40.0/24</ip-netmask></entry>
+            <entry name="h-admin-ws"><ip-netmask>10.10.10.50/32</ip-netmask></entry>
+            <entry name="h-web01"><ip-netmask>10.10.20.11/32</ip-netmask></entry>
+            <entry name="h-web02"><ip-netmask>10.10.20.12/32</ip-netmask></entry>
+            <entry name="h-ftp01"><ip-netmask>10.10.20.30/32</ip-netmask></entry>
+            <entry name="r-bad-range"><ip-range>203.0.113.10-203.0.113.20</ip-range></entry>
+          </address>
+          <address-group>
+            <entry name="grp-web">
+              <static>
+                <member>h-web01</member>
+                <member>h-web02</member>
+              </static>
+            </entry>
+            <entry name="grp-blocklist">
+              <static>
+                <member>r-bad-range</member>
+                <member>f-bad-domain</member>
+                <member>h-decom</member>
+              </static>
+            </entry>
+          </address-group>
+          <service>
+            <entry name="tcp-8443">
+              <protocol><tcp><port>8443</port></tcp></protocol>
+            </entry>
+          </service>
+          <service-group>
+            <entry name="sg-web">
+              <members>
+                <member>service-https</member>
+                <member>tcp-8443</member>
+              </members>
+            </entry>
+          </service-group>
+          <rulebase>
+            <security>
+              <rules>
+                <entry name="allow-dns">
+                  <from><member>trust</member></from>
+                  <to><member>untrust</member></to>
+                  <source><member>net-users</member></source>
+                  <destination><member>any</member></destination>
+                  <application><member>dns</member></application>
+                  <service><member>application-default</member></service>
+                  <action>allow</action>
+                </entry>
+                <entry name="allow-web-out">
+                  <from><member>trust</member></from>
+                  <to><member>untrust</member></to>
+                  <source><member>net-users</member></source>
+                  <destination><member>any</member></destination>
+                  <application><member>web-browsing</member><member>ssl</member></application>
+                  <service><member>application-default</member></service>
+                  <action>allow</action>
+                </entry>
+                <entry name="allow-web-in">
+                  <from><member>untrust</member></from>
+                  <to><member>dmz</member></to>
+                  <source><member>any</member></source>
+                  <destination><member>grp-web</member></destination>
+                  <application><member>web-browsing</member><member>ssl</member></application>
+                  <service><member>sg-web</member></service>
+                  <action>allow</action>
+                </entry>
+                <entry name="allow-ssh-admins">
+                  <from><member>trust</member></from>
+                  <to><member>dmz</member></to>
+                  <source><member>h-admin-ws</member></source>
+                  <destination><member>grp-web</member></destination>
+                  <application><member>ssh</member></application>
+                  <service><member>application-default</member></service>
+                  <action>allow</action>
+                </entry>
+                <entry name="allow-ssh-jump">
+                  <from><member>trust</member></from>
+                  <to><member>dmz</member></to>
+                  <source><member>h-admin-ws</member></source>
+                  <destination><member>h-web01</member></destination>
+                  <application><member>ssh</member></application>
+                  <service><member>application-default</member></service>
+                  <action>allow</action>
+                </entry>
+                <entry name="allow-ntp">
+                  <from><member>trust</member></from>
+                  <to><member>untrust</member></to>
+                  <source><member>net-servers</member></source>
+                  <destination><member>any</member></destination>
+                  <application><member>ntp</member></application>
+                  <service><member>application-default</member></service>
+                  <action>allow</action>
+                  <log-end>no</log-end>
+                </entry>
+                <entry name="allow-web-out-copy">
+                  <from><member>trust</member></from>
+                  <to><member>untrust</member></to>
+                  <source><member>net-users</member></source>
+                  <destination><member>any</member></destination>
+                  <application><member>web-browsing</member><member>ssl</member></application>
+                  <service><member>application-default</member></service>
+                  <action>allow</action>
+                </entry>
+                <entry name="old-ftp-access">
+                  <from><member>trust</member></from>
+                  <to><member>dmz</member></to>
+                  <source><member>net-users</member></source>
+                  <destination><member>h-ftp01</member></destination>
+                  <application><member>ftp</member></application>
+                  <service><member>application-default</member></service>
+                  <action>allow</action>
+                  <disabled>yes</disabled>
+                </entry>
+                <entry name="temp-vendor-access">
+                  <from><member>untrust</member></from>
+                  <to><member>dmz</member></to>
+                  <source><member>any</member></source>
+                  <destination><member>any</member></destination>
+                  <application><member>any</member></application>
+                  <service><member>any</member></service>
+                  <action>allow</action>
+                </entry>
+                <entry name="drop-blocklist">
+                  <from><member>untrust</member></from>
+                  <to><member>trust</member></to>
+                  <source><member>grp-blocklist</member></source>
+                  <destination><member>any</member></destination>
+                  <application><member>any</member></application>
+                  <service><member>any</member></service>
+                  <action>drop</action>
+                </entry>
+                <entry name="deny-all">
+                  <from><member>any</member></from>
+                  <to><member>any</member></to>
+                  <source><member>any</member></source>
+                  <destination><member>any</member></destination>
+                  <application><member>any</member></application>
+                  <service><member>any</member></service>
+                  <action>deny</action>
+                </entry>
+              </rules>
+            </security>
+          </rulebase>
+        </entry>
+      </vsys>
+    </entry>
+  </devices>
+</config>
