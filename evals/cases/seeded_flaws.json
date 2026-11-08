@@ -1,0 +1,111 @@
+{
+  "about": "Ground truth for the rule checks on the sample data: exactly what each check in src/fwlens/analysis/checks.sql must find, no more and no less. Used by tests/test_checks.py now and by the Step 12 evals.",
+  "samples": {
+    "configs": [
+      "data/samples/panos/lab-fw01.xml",
+      "data/samples/fortigate/lab-fgt01.conf"
+    ],
+    "logs": [
+      "data/samples/logs/lab-fw01.log",
+      "data/samples/logs/lab-fgt01.log"
+    ]
+  },
+  "checks": {
+    "any_any": [
+      {
+        "rule_id": "panos:lab-fw01:temp-vendor-access",
+        "related_rule_id": null,
+        "why": "allow with source, destination and service all 'any'"
+      },
+      {
+        "rule_id": "fortigate:lab-fgt01:temp-vendor-access",
+        "related_rule_id": null,
+        "why": "allow with srcaddr all, dstaddr all, service ALL"
+      }
+    ],
+    "logging_off": [
+      {
+        "rule_id": "panos:lab-fw01:allow-ntp",
+        "related_rule_id": null,
+        "why": "<log-end>no</log-end> on an enabled allow rule"
+      },
+      {
+        "rule_id": "fortigate:lab-fgt01:allow-ntp",
+        "related_rule_id": null,
+        "why": "set logtraffic disable on an enabled accept policy"
+      }
+    ],
+    "duplicate": [
+      {
+        "rule_id": "panos:lab-fw01:allow-web-out-copy",
+        "related_rule_id": "panos:lab-fw01:allow-web-out",
+        "why": "identical match fields; the copy sits later in the rulebase"
+      },
+      {
+        "rule_id": "fortigate:lab-fgt01:allow-web-out-copy",
+        "related_rule_id": "fortigate:lab-fgt01:allow-web-out",
+        "why": "identical match fields; the copy sits later in the policy list"
+      }
+    ],
+    "shadowed": [
+      {
+        "rule_id": "panos:lab-fw01:allow-ssh-jump",
+        "related_rule_id": "panos:lab-fw01:allow-ssh-admins",
+        "why": "h-web01 (10.10.20.11/32) is inside grp-web; every other field is equal"
+      },
+      {
+        "rule_id": "fortigate:lab-fgt01:allow-ssh-jump",
+        "related_rule_id": "fortigate:lab-fgt01:allow-ssh-admins",
+        "why": "h-web01 (10.20.20.11/32) is inside grp-web; every other field is equal"
+      }
+    ],
+    "zero_hit": [
+      {
+        "rule_id": "panos:lab-fw01:allow-ssh-jump",
+        "related_rule_id": null,
+        "why": "shadowed, so it never matches"
+      },
+      {
+        "rule_id": "panos:lab-fw01:allow-ntp",
+        "related_rule_id": null,
+        "why": "logging off: carries traffic but writes no logs",
+        "detail_contains": "logging"
+      },
+      {
+        "rule_id": "panos:lab-fw01:allow-web-out-copy",
+        "related_rule_id": null,
+        "why": "duplicate, so the original always matches first"
+      },
+      {
+        "rule_id": "panos:lab-fw01:drop-blocklist",
+        "related_rule_id": null,
+        "why": "no blocklisted source in the 7-day sample window"
+      },
+      {
+        "rule_id": "fortigate:lab-fgt01:allow-ssh-jump",
+        "related_rule_id": null,
+        "why": "shadowed, so it never matches"
+      },
+      {
+        "rule_id": "fortigate:lab-fgt01:allow-ntp",
+        "related_rule_id": null,
+        "why": "logging off: carries traffic but writes no logs",
+        "detail_contains": "logging"
+      },
+      {
+        "rule_id": "fortigate:lab-fgt01:allow-web-out-copy",
+        "related_rule_id": null,
+        "why": "duplicate, so the original always matches first"
+      },
+      {
+        "rule_id": "fortigate:lab-fgt01:deny-blocklist",
+        "related_rule_id": null,
+        "why": "no blocklisted source in the 7-day sample window"
+      }
+    ]
+  },
+  "not_findings": {
+    "old-ftp-access": "disabled on both devices: excluded from every check, including zero_hit",
+    "deny-all / temp-vendor-access vs allow-web-in": "a broader rule AFTER a narrower one is not shadowing"
+  }
+}

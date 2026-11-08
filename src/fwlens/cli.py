@@ -4,12 +4,14 @@ fwlens db upgrade                 create / migrate the schema
 fwlens load-config FILE [--vendor panos|fortigate]
 fwlens load-logs FILE
 fwlens load-samples               load every sample config and log in data/samples
+fwlens run-checks [CHECK ...]     run the rule checks in analysis/checks.sql
 """
 
 import argparse
 import logging
 from pathlib import Path
 
+from fwlens.analysis.checks import CHECK_NAMES, load_queries, run_checks
 from fwlens.db.load import load_config, load_log_file
 from fwlens.db.migrate import upgrade_schema
 from fwlens.db.session import get_engine
@@ -34,6 +36,9 @@ def main(argv: list[str] | None = None) -> None:
 
     commands.add_parser("load-samples", help="load the sample configs and logs")
 
+    checks = commands.add_parser("run-checks", help="run the rule checks")
+    checks.add_argument("checks", nargs="*", metavar="CHECK", help=f"default: all of {CHECK_NAMES}")
+
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
 
@@ -48,6 +53,11 @@ def main(argv: list[str] | None = None) -> None:
             _load_configs([(p, None) for p in sorted(SAMPLES.glob("*/*.xml"))])
             _load_configs([(p, None) for p in sorted(SAMPLES.glob("*/*.conf"))])
             _load_logs(sorted((SAMPLES / "logs").glob("*.log")))
+        case "run-checks":
+            unknown = set(args.checks) - set(CHECK_NAMES)
+            if unknown:
+                parser.error(f"unknown check(s) {sorted(unknown)}; choose from {CHECK_NAMES}")
+            _run_checks(args.checks or list(CHECK_NAMES))
 
 
 def _load_configs(files: list[tuple[Path, str | None]]) -> None:
@@ -67,6 +77,21 @@ def _load_logs(files: list[Path]) -> None:
             count = load_log_file(conn, path)
         status = "already loaded, skipped" if count is None else f"{count} events"
         print(f"{path.name}: {status}")
+
+
+def _run_checks(names: list[str]) -> None:
+    queries = load_queries()
+    with get_engine().connect() as conn:
+        findings = run_checks(conn, names)
+    for name in names:
+        if queries[name] is None:
+            print(f"[{name}] not written yet (analysis/checks.sql)")
+            continue
+        rows = [f for f in findings if f.check == name]
+        print(f"[{name}] {len(rows)} finding(s)")
+        for f in rows:
+            related = f" (vs {f.related_rule_id})" if f.related_rule_id else ""
+            print(f"  {f.rule_id}{related}: {f.detail}")
 
 
 if __name__ == "__main__":

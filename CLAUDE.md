@@ -127,3 +127,10 @@ findings plus agent answers. The README shows measured results, not claims.
   disable_existing_loggers=False or in-process migrations mute app loggers.
   Compose is db-only for now; app container comes in Step 14.
   Next: Step 9 (SQL rule checks in `analysis/checks.sql` - Mehrad writes, I review).
+- 2026-11-08: Step 9 harness ready; SQL NOT written (Mehrad's). `checks.sql` has a spec
+  and an empty body per check (any_any, logging_off, duplicate, shadowed, zero_hit).
+  Contract: each query returns rule_id, related_rule_id, detail. Ground truth in
+  `evals/cases/seeded_flaws.json` (verified against an independent Python calculation).
+  Loop: edit checks.sql -> `uv run pytest tests/test_checks.py -v` (unwritten checks
+  skip) and `uv run fwlens run-checks`. DB fixtures moved to `tests/conftest.py`.
+  Next: Mehrad writes the five queries; then Claude reviews; tick Step 9 when all pass.
