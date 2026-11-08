@@ -11,7 +11,8 @@ production Python, SQL / data pipelines, and LLM apps (RAG + agents).
 - Pair-programmer mode. Explain the plan for each step before writing code, then
   explain what you wrote. I need to defend every line in interviews.
 - I write these myself; you review and suggest fixes, you do not write them for me:
-  1. the SQL rule checks in `src/fwlens/analysis/checks.sql`
+  1. ~~the SQL rule checks in `src/fwlens/analysis/checks.sql`~~ (2026-11-08: Mehrad
+     asked Claude to write these; Mehrad still needs to be able to explain them)
   2. the agent tool-use loop in `src/fwlens/agent/loop.py`
 - Everywhere else, scaffold and implement freely, but keep diffs small: one step at a time.
 - Every step ends with: tests passing, `ruff` clean, one git commit with a clear message.
@@ -76,7 +77,7 @@ and ground truth.
 - [x] 6. `models.py` + PAN-OS and FortiGate parsers + tests
 - [x] 7. Syslog parser + sample log generator + tests
 - [x] 8. Postgres schema (Alembic) + loader; `docker compose up` works   <- milestone, week 2
-- [ ] 9. SQL rule checks: any-any, shadowed, duplicate, zero-hit, logging-off (Mehrad writes)
+- [x] 9. SQL rule checks: any-any, shadowed, duplicate, zero-hit, logging-off (Claude wrote, at Mehrad's request)
 - [ ] 10. RAG: chunk + embed vendor best-practice docs into pgvector; retrieval with citations
 - [ ] 11. Agent with tools: run_checks, query_rules, query_logs, search_docs,
           explain_block(src, dst, port), propose_rule_change (suggest only, never apply)
@@ -134,3 +135,12 @@ findings plus agent answers. The README shows measured results, not claims.
   Loop: edit checks.sql -> `uv run pytest tests/test_checks.py -v` (unwritten checks
   skip) and `uv run fwlens run-checks`. DB fixtures moved to `tests/conftest.py`.
   Next: Mehrad writes the five queries; then Claude reviews; tick Step 9 when all pass.
+- 2026-11-08: Step 9 done. Mehrad asked Claude to write checks.sql (CLAUDE.md updated).
+  All 5 checks match the ground truth; 17 extra edge-case tests in
+  `tests/test_checks_edge.py` (subnet containment, unresolved members, fqdn/range
+  values, host bits, service groups, duplicates x3, devices without logs).
+  Shadowed limitation: ip-range/fqdn values compare by exact string only.
+  Open: Mehrad to walk through checks.sql (esp. shadowed's double NOT EXISTS) before
+  interviews.
+  Next: Step 10 (RAG over vendor docs; needs Bedrock Titan embeddings - ask before any
+  AWS cost; confirm AWS profile/region and model access first).
